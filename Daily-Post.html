@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>My Dear Today</title>
+<style>
+  :root{
+    --bg: #fffaf0; --glass: rgba(255,255,255,0.55); --glass-strong: rgba(255,255,255,0.8);
+    --border: rgba(0,0,0,0.07); --text-primary: #2b2630; --text-secondary: rgba(43,38,48,0.55);
+    --text-tertiary: rgba(43,38,48,0.32); --accent: #44ACFF; --accent-soft: rgba(68,172,255,0.16);
+    --radius-lg: 24px; --radius-md: 16px; --radius-sm: 12px; --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --handwritten: 'Bradley Hand', 'Segoe Script', 'Comic Sans MS', cursive;
+  }
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body{ margin:0; padding:0; min-height:100%; background: var(--bg); color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    overscroll-behavior-y: none; -webkit-font-smoothing: antialiased;
+    scrollbar-width: thin; scrollbar-color: #FE9EC7 transparent; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar{ width:5px; background:transparent; }
+  html::-webkit-scrollbar-track, body::-webkit-scrollbar-track{ background:transparent !important; }
+  html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb{ background-color:#FE9EC7; border-radius:999px; border:1px solid transparent; background-clip:content-box; }
+  html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover{ background-color:#44ACFF; }
+  html::-webkit-scrollbar-button, body::-webkit-scrollbar-button{ display:none; width:0; height:0; }
+
+  #app{ max-width: 480px; margin: 0 auto; min-height: 100vh; position: relative; display: flex; flex-direction: column; isolation: isolate; overflow-x: hidden; }
+
+  .blob{ position: fixed; border-radius: 50%; filter: blur(70px); z-index: -1; pointer-events:none; }
+  .blob1{ width: 280px; height: 280px; background: #FE9EC7; top: -80px; left: -60px; opacity: 0.38; }
+  .blob2{ width: 240px; height: 240px; background: #89D4FF; top: 240px; right: -80px; opacity: 0.4; }
+  .blob3{ width: 260px; height: 260px; background: #44ACFF; bottom: 40px; left: -60px; opacity: 0.28; }
+  .blob4{ width: 220px; height: 220px; background: #F9F6C4; bottom: -50px; right: 30px; opacity: 0.55; }
+
+  .glass{ background: var(--glass); backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%); border: 1px solid var(--border); }
+
+  .topbar{ position: sticky; top: 0; z-index: 20; padding: 16px 22px 12px; display:flex; align-items:flex-start; justify-content: space-between; }
+  .topbar .title{ font-size: 26px; font-weight: 700; letter-spacing:-0.4px; }
+  .topbar .sub{ font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .topbar-right{ display:flex; align-items:center; gap:8px; }
+  .streak-pill{ display:flex; align-items:center; gap:6px; padding: 7px 12px 7px 9px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+
+  .icon{ width:18px; height:18px; stroke: currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .icon-sm{ width:15px; height:15px; }
+
+  .view{ flex: 1; padding: 4px 22px calc(104px + var(--safe-bottom)); display: none; animation: fadeIn .25s ease; }
+  .view.active{ display:block; }
+  @keyframes fadeIn{ from{ opacity:0; transform: translateY(6px);} to{opacity:1; transform: translateY(0);} }
+
+  .card, .polaroid-big, .week-nav, .seg-toggle{ margin-left: 5px; margin-right: 5px; }
+  .card{ border-radius: var(--radius-lg); padding: 19px; margin-bottom: 16px; }
+  .card h2{ margin: 0 0 2px; font-size: 16px; font-weight: 700; }
+  .card .meta{ margin: 0 0 14px; font-size: 12.5px; color: var(--text-secondary); }
+  .card-head{ display:flex; align-items:center; justify-content:space-between; margin: 0 11px 12px; }
+  .card-head h3{ margin:0; font-size: 17px; font-weight: 700; }
+
+  /* ---------- TODAY VIEW ---------- */
+  .polaroid-big{ border-radius: var(--radius-lg); overflow: hidden; }
+  .polaroid-big .photo{ width:100%; aspect-ratio: 1/1; display:flex; align-items:center; justify-content:center; font-size: 58px; overflow:hidden; }
+  .polaroid-big .photo svg{ width:34px; height:34px; stroke: var(--text-tertiary); }
+  .polaroid-big .info{ padding: 16px 19px 19px; }
+  .polaroid-big .caption-line{ font-family: var(--handwritten); font-size: 19px; line-height:1.4; color: var(--text-primary); margin-bottom: 10px; }
+  .polaroid-big .moodrow{ display:flex; align-items:center; gap:7px; font-family: var(--handwritten); font-size: 18px; }
+  .mood-dot{ width: 23px; height:23px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .mood-dot svg{ width:12px; height:12px; }
+
+  .change-photo-btn{ display:flex; width: fit-content; margin: 16px auto 0; padding: 12px 24px; border-radius: 999px; border: 1px solid var(--border); background: var(--glass); color: var(--text-primary); font-weight:600; font-size: 13.5px; cursor:pointer; align-items:center; justify-content:center; gap:8px; backdrop-filter: blur(20px); }
+  .change-photo-btn:active{ transform: scale(0.96); }
+
+  .empty-state{ text-align:center; padding: 36px 14px; }
+  .empty-state svg{ width: 38px; height:38px; stroke: var(--text-tertiary); margin-bottom: 10px; }
+  .empty-state p{ color: var(--text-secondary); font-size: 13.5px; margin: 0 0 16px; }
+  .add-entry-btn{ background: var(--accent); color:#fff; border:none; padding: 12px 24px; border-radius: 999px; font-weight: 700; font-size: 14px; cursor:pointer; }
+
+
+  /* ---------- TIMELINE VIEW ---------- */
+  .timeline-toggle{ display:none; }
+
+  .reel{ height: calc(100vh - 250px); overflow-y: auto; -ms-overflow-style: none; scrollbar-width: none; }
+  .reel::-webkit-scrollbar{ display:none; }
+  .reel-item{ display:flex; flex-direction:column; align-items:center; padding: 14px 4px; }
+  .polaroid{ border-radius: var(--radius-md); padding: 14px 14px 18px; width: 84%; max-width: 300px; transform: rotate(var(--tilt,0deg)); box-shadow: 0 14px 30px rgba(0,0,0,0.12); cursor:pointer; }
+  .polaroid .photo{ width:100%; aspect-ratio: 1/1; border-radius: 10px; display:flex; align-items:center; justify-content:center; font-size: 48px; margin-bottom: 14px; overflow:hidden; }
+  .polaroid .photo svg{ width:30px; height:30px; stroke: var(--text-tertiary); }
+  .polaroid .cap{ font-family: var(--handwritten); font-size: 17px; line-height:1.4; color: var(--text-primary); margin: 0 0 8px; text-align:center; }
+  .polaroid .mood-row{ display:flex; align-items:center; justify-content:center; gap:6px; font-family: var(--handwritten); font-size: 15px; }
+  .polaroid .mood-row svg{ width:13px; height:13px; }
+
+  .photo-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 6px; height: calc(100vh - 250px); overflow-y: scroll; padding: 2px 0 16px; scrollbar-width: thin; scrollbar-color: #FE9EC7 transparent; }
+  .photo-grid::-webkit-scrollbar{ width:5px; background:transparent; }
+  .photo-grid::-webkit-scrollbar-track{ background:transparent !important; }
+  .photo-grid::-webkit-scrollbar-thumb{ background-color:#FE9EC7; border-radius:999px; border:1px solid transparent; background-clip:content-box; }
+  .grid-cell{ aspect-ratio: 1/1; border-radius: 10px; overflow:hidden; cursor:pointer; display:flex; align-items:center; justify-content:center; border: 1px solid var(--border); }
+  .grid-cell svg{ width:20px; height:20px; stroke: var(--text-tertiary); }
+
+  .photo-img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+  /* ---------- Per-entry themes (Phase 9, reworked) ---------- */
+  .polaroid-big.theme-vintage, .polaroid.theme-vintage, .theme-page.theme-vintage{ background:#fdf6e8; }
+  .polaroid-big.theme-vintage, .polaroid.theme-vintage{ border:1px solid rgba(0,0,0,0.08); }
+  .theme-vintage img, .theme-vintage .photo-img{ filter:sepia(.4) saturate(.85) contrast(.95); }
+  .theme-vintage .caption-line, .theme-vintage .cap{ color:#5a4632; }
+
+  .polaroid-big.theme-minimal, .polaroid.theme-minimal{ border-radius:8px; box-shadow:none; border:1px solid var(--border); background:#fff; }
+  .theme-page.theme-minimal{ background:#fff; }
+
+  .polaroid-big.theme-filmstrip, .polaroid.theme-filmstrip, .theme-page.theme-filmstrip{ background:#16141a; }
+  .theme-filmstrip .caption-line, .theme-filmstrip .cap{ color:#efeeec; }
+
+  .polaroid-big.theme-scrapbook, .polaroid.theme-scrapbook, .theme-page.theme-scrapbook{ background:#fff; }
+  .polaroid-big.theme-scrapbook, .polaroid.theme-scrapbook{ border:6px solid #fff; box-shadow:0 14px 26px rgba(0,0,0,.16); position:relative; }
+  .theme-scrapbook .caption-line, .theme-scrapbook .cap{ color:#3a2424; }
+
+  .polaroid-big.theme-happy, .polaroid.theme-happy, .theme-page.theme-happy{ background:#fff7e0; }
+  .theme-happy img, .theme-happy .photo-img{ filter:saturate(1.3) brightness(1.08) contrast(1.05); }
+  .theme-happy .caption-line, .theme-happy .cap{ color:#7a5b12; }
+
+  .polaroid-big.theme-sad, .polaroid.theme-sad, .theme-page.theme-sad{ background:#eef2f6; }
+  .theme-sad img, .theme-sad .photo-img{ filter:grayscale(.3) saturate(.6) brightness(.93); }
+  .theme-sad .caption-line, .theme-sad .cap{ color:#3b4a5a; }
+
+  .polaroid-big.theme-neutral, .polaroid.theme-neutral, .theme-page.theme-neutral{ background:#f1efec; }
+  .theme-neutral img, .theme-neutral .photo-img{ filter:grayscale(.55) contrast(.95); }
+  .theme-neutral .caption-line, .theme-neutral .cap{ color:#4a4540; }
+
+  /* ---------- RECAP / CALENDAR / STATS / MOOD VIEW ---------- */
+  .seg-toggle{ display:flex; border-radius: 999px; padding: 4px; margin-bottom: 14px; }
+  .seg-btn{ flex:1; text-align:center; padding: 9px 0; border-radius: 999px; font-size: 13.5px; font-weight:600; color: var(--text-secondary); cursor:pointer; border:none; background:none; }
+  .seg-btn.active{ background: var(--glass-strong); color: var(--text-primary); }
+  .week-nav{ display:flex; align-items:center; justify-content:space-between; border-radius: 999px; padding: 12px 16px; margin-bottom: 14px; }
+  .week-nav button{ background:none; border:none; color: var(--text-secondary); cursor:pointer; display:flex; align-items:center; padding:4px; border-radius:8px; }
+  .week-nav button:disabled{ opacity:0.3; cursor:default; }
+  .week-nav .range{ font-size: 15px; font-weight: 700; }
+  .recap-grid{ display:grid; grid-template-columns: repeat(7,1fr); gap: 6px; }
+  .recap-col{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .recap-col .dayname{ font-size: 10.5px; color: var(--text-tertiary); font-weight:600; }
+  .recap-cell{ width:100%; aspect-ratio: 1/1; border-radius: 11px; display:flex; align-items:center; justify-content:center; font-size: 13px; font-weight:700; color: var(--text-primary); position:relative; overflow:hidden; border: 1px solid var(--border); }
+  .recap-cell.empty{ background: rgba(0,0,0,0.035); color: var(--text-tertiary); font-weight:500; }
+  .recap-cell.today{ box-shadow: 0 0 0 2px var(--accent); }
+  .stats-grid{ display:grid; grid-template-columns: repeat(2,1fr); gap: 4px 10px; }
+  .stat-tile{ text-align:center; padding: 12px 4px; }
+  .stat-num{ font-size: 27px; font-weight:800; color: var(--accent); line-height:1; }
+  .stat-label{ font-size: 11.5px; color: var(--text-secondary); margin-top:5px; font-weight:600; }
+  .collage-grid{ display:grid; grid-template-columns: repeat(4,1fr); grid-template-rows: repeat(2, 68px); gap:6px; border-radius: var(--radius-md); overflow:hidden; }
+  .collage-grid .c1{ grid-column: span 2; grid-row: span 2; }
+  .collage-cell{ display:flex; align-items:center; justify-content:center; font-size: 20px; border-radius: 9px; overflow:hidden; cursor:pointer; }
+  .collage-empty{ text-align:center; padding: 28px 14px; border-radius: var(--radius-md); background: rgba(0,0,0,0.035); }
+  .collage-empty svg{ width:32px; height:32px; stroke: var(--text-tertiary); margin-bottom:8px; }
+  .collage-empty p.t{ font-weight:700; font-size:14px; margin:0 0 3px; }
+  .collage-empty p.d{ font-size:12.5px; color: var(--text-secondary); margin:0; }
+  #moodInsightCard .ic{ width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+  #moodInsightCard .ic svg{ width:17px; height:17px; }
+  #moodInsightCard h4{ margin:0 0 8px; font-size:15px; font-weight:700; }
+  #moodInsightCard p{ margin:0; font-size:13px; line-height:1.55; color: var(--text-secondary); }
+  .recap-footer{ text-align:center; font-size:11.5px; color: var(--text-tertiary); margin: 6px 0 4px; font-weight:500; }
+
+  .bottom-nav{ position: fixed; bottom: 16px; left: 0; right: 0; max-width: 420px; margin: 0 auto; display:flex; justify-content: space-around; padding: 10px 8px; z-index: 30; border-radius: 999px; }
+  .nav-btn{ flex:1; display:flex; flex-direction:column; align-items:center; gap: 4px; background:none; border:none; color: var(--text-tertiary); font-family: inherit; font-size: 11px; padding: 6px 10px; cursor:pointer; border-radius: 999px; }
+  .nav-btn.active{ color: var(--text-primary); background: var(--glass-strong); }
+  .nav-btn svg{ width:20px; height:20px; }
+
+  .toast{ position: fixed; top: 14px; left: 50%; transform: translateX(-50%) translateY(-30px); background: var(--text-primary); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: 600; z-index: 100; opacity: 0; transition: all .3s ease; pointer-events: none; white-space: nowrap; }
+  .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ---------- Entry sheet (compact) ---------- */
+  .sheet-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:50; display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity .25s ease; }
+  .sheet-overlay.open{ opacity:1; pointer-events:auto; }
+  .sheet{ width:100%; max-width:480px; max-height:92vh; overflow-y:auto; border-radius:24px 24px 0 0; padding:8px 18px calc(18px + var(--safe-bottom)); transform: translateY(100%); transition: transform .3s ease; scrollbar-width: thin; scrollbar-color: #FE9EC7 transparent; background: #fffdf6; }
+  .sheet::-webkit-scrollbar{ width:5px; background:transparent; }
+  .sheet::-webkit-scrollbar-thumb{ background-color:#FE9EC7; border-radius:999px; border:1px solid transparent; background-clip:content-box; }
+  .sheet-overlay.open .sheet{ transform: translateY(0); }
+  .sheet-handle{ width:34px; height:4px; border-radius:999px; background:var(--border); margin:5px auto 10px; }
+  .sheet-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .sheet-head h3{ margin:0; font-size:17px; font-weight:700; }
+  .sheet-close{ width:28px; height:28px; border-radius:50%; background:var(--glass-strong); border:none; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; }
+  .sheet-close svg{ width:13px; height:13px; }
+
+  .field-label{ display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin: 10px 2px 5px; }
+  .text-input, .text-area{ width:100%; background:rgba(0,0,0,0.035); border:1px solid var(--border); border-radius:12px; padding:10px 12px; color:var(--text-primary); font-size:14px; font-family:inherit; }
+  .text-area{ min-height:48px; resize:vertical; }
+  .text-input::placeholder, .text-area::placeholder{ color:var(--text-tertiary); }
+
+  .mood-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap:6px; }
+  .mood-chip{ display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 6px; border-radius:12px; border:1px solid var(--border); background:rgba(0,0,0,0.03); color:var(--text-secondary); font-size:11.5px; font-weight:600; cursor:pointer; }
+
+  .sheet-actions{ display:flex; gap:10px; margin-top:12px; }
+  .btn-primary{ flex:1; background: var(--accent); color:#fff; border:none; padding:13px; border-radius:999px; font-weight:700; font-size:14.5px; cursor:pointer; }
+
+  /* ---------- Theme/photo carousel (replaces old single photo box) ---------- */
+  .theme-carousel-wrap{ position:relative; }
+  .theme-carousel{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; border-radius:16px; aspect-ratio:4/3; -ms-overflow-style:none; scrollbar-width:none; }
+  .theme-carousel::-webkit-scrollbar{ display:none; }
+  .theme-page{ flex:0 0 100%; scroll-snap-align:center; position:relative; cursor:pointer; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .theme-page img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .theme-label{ position:absolute; bottom:8px; left:8px; background:rgba(0,0,0,0.45); color:#fff; font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; }
+  .theme-dots{ display:flex; justify-content:center; gap:5px; margin-top:7px; }
+  .theme-dot{ width:6px; height:6px; border-radius:50%; background:var(--border); }
+  .theme-dot.active{ background: var(--accent); width:15px; border-radius:4px; }
+  .photo-empty{ width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:var(--text-secondary); font-size:12.5px; font-weight:600; }
+  .photo-empty svg{ width:28px; height:28px; stroke:var(--text-tertiary); }
+  .photo-remove{ position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:50%; background:rgba(0,0,0,0.55); border:none; display:none; align-items:center; justify-content:center; color:#fff; cursor:pointer; z-index:2; }
+  .photo-remove svg{ width:12px; height:12px; }
+
+  /* ---------- Photo viewer ---------- */
+  .viewer-overlay{ position:fixed; inset:0; background:#000; z-index:70; display:flex; flex-direction:column; opacity:0; pointer-events:none; transition:opacity .25s ease; }
+  .viewer-overlay.open{ opacity:1; pointer-events:auto; }
+  .viewer-close{ position:absolute; top:18px; right:18px; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.12); border:none; display:flex; align-items:center; justify-content:center; color:#fff; z-index:5; cursor:pointer; }
+  .viewer-close svg{ width:16px; height:16px; }
+  .viewer-content{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px 40px; position:relative; }
+  .viewer-scroll{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; width:100%; height:68%; -ms-overflow-style:none; scrollbar-width:none; }
+  .viewer-scroll::-webkit-scrollbar{ display:none; }
+  .viewer-slide{ flex:0 0 100%; scroll-snap-align:start; display:flex; align-items:center; justify-content:center; }
+  .viewer-slide img{ max-width:100%; max-height:100%; object-fit:contain; border-radius:12px; }
+  .viewer-empty{ display:flex; flex-direction:column; align-items:center; gap:6px; color:#fff; text-align:center; padding:0 30px; }
+  .viewer-empty svg{ width:46px; height:46px; stroke:rgba(255,255,255,0.3); margin-bottom:8px; }
+  .viewer-cap{ color:#fff; font-family: var(--handwritten); font-size:19px; margin-top:18px; text-align:center; padding:0 24px; }
+  .viewer-mood{ display:flex; align-items:center; gap:6px; font-family: var(--handwritten); font-size:17px; margin-top:8px; }
+  .viewer-mood svg{ width:16px; height:16px; }
+
+  /* ====================================================================
+     RESPONSIVE LAYOUT — tablet & desktop
+     Mobile (<700px) keeps the original single-column phone-app layout.
+     Tablet (700–1023px) widens the app shell a bit and grows touch targets.
+     Desktop (1024px+) centers a wider "device" panel on a soft background
+     so the app still feels like a phone/tablet experience rather than
+     stretching into an ugly full-bleed layout.
+     ==================================================================== */
+
+  @media (min-width: 700px){
+    html, body{ background: linear-gradient(180deg,#fdf4ea,#f6ecf6 60%,#eaf3fb); }
+    #app{ max-width: 600px; box-shadow: 0 30px 70px rgba(43,38,48,0.10); border-radius: 28px; overflow: hidden; min-height: 92vh; margin: 4vh auto; }
+    .bottom-nav{ max-width: 520px; }
+    .sheet{ max-width: 600px; left:50%; transform: translate(-50%,100%); border-radius: 24px; margin-bottom: 14px; max-height: 86vh; }
+    .sheet-overlay.open .sheet{ transform: translate(-50%,0); }
+    .sheet-overlay{ align-items:center; }
+
+    .topbar .title{ font-size: 28px; }
+    .card{ padding: 22px; }
+    .polaroid-big .photo{ aspect-ratio: 16/10; }
+    .photo-grid{ grid-template-columns: repeat(4, 1fr); }
+    .collage-grid{ grid-template-rows: repeat(2, 84px); }
+    .mood-grid{ grid-template-columns: repeat(6,1fr); }
+  }
+
+  @media (min-width: 1024px){
+    #app{ max-width: 760px; margin: 5vh auto; }
+    .reel{ height: calc(100vh - 280px); }
+    .photo-grid{ height: calc(100vh - 280px); grid-template-columns: repeat(5, 1fr); }
+    .view{ padding-left: 36px; padding-right: 36px; }
+    .topbar{ padding-left: 36px; padding-right: 36px; }
+  }
+
+  @media (min-width: 1400px){
+    #app{ max-width: 860px; }
+  }
+
+  /* Short / landscape phones: keep reel & grid heights sane */
+  @media (max-height: 640px) and (orientation: landscape){
+    .reel, .photo-grid{ height: calc(100vh - 170px); }
+    .view{ padding-bottom: 90px; }
+  }
+</style>
+</head>
+<body>
+<div class="blob blob1"></div><div class="blob blob2"></div><div class="blob blob3"></div><div class="blob blob4"></div>
+
+<div id="app">
+  <div class="topbar">
+    <div><div class="title" id="pageTitle">Today</div><div class="sub" id="pageSub">—</div></div>
+    <div class="topbar-right"><div class="streak-pill glass" id="streakBadge"></div></div>
+  </div>
+
+  <div class="view active" data-view="today">
+    <div id="todayContent"></div>
+  </div>
+
+  <div class="view" data-view="timeline">
+    <div class="reel" id="reel"></div>
+  </div>
+
+  <div class="view" data-view="recap">
+    <div class="seg-toggle glass">
+      <button class="seg-btn active" data-range="weekly">Weekly</button>
+      <button class="seg-btn" data-range="monthly">Monthly</button>
+    </div>
+    <div class="week-nav glass"><button id="prevRange"></button><div class="range" id="rangeLabel">—</div><button id="nextRange"></button></div>
+    <div class="card glass"><div class="recap-grid" id="recapGrid"></div><p class="meta" id="calendarCount" style="margin:12px 0 0;">—</p></div>
+    <div class="card glass"><h2>Your stats</h2><p class="meta">All-time — not tied to the week/month above</p><div class="stats-grid" id="statsGrid"></div></div>
+    <div class="card glass"><h2>Seven days, one story</h2><p class="meta" id="collageMeta">Made for you each week</p><div id="collageWrap"></div></div>
+    <div class="card-head"><h3>Mood</h3></div>
+    <div class="card glass" id="moodInsightCard"></div>
+    <p class="recap-footer">made with love by Gauransh Aggarwal</p>
+  </div>
+
+  <div class="bottom-nav glass">
+    <button class="nav-btn active" data-target="today"></button>
+    <button class="nav-btn" data-target="timeline"></button>
+    <button class="nav-btn" data-target="recap"></button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="sheet-overlay" id="sheetOverlay">
+    <div class="sheet" id="entrySheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><h3 id="sheetTitle">New entry</h3><button class="sheet-close" id="sheetClose"></button></div>
+
+      <div class="theme-carousel-wrap">
+        <div class="theme-carousel" id="themeCarousel"></div>
+        <button class="photo-remove" id="photoRemoveBtn"></button>
+        <input type="file" id="photoInput" accept="image/*" hidden>
+      </div>
+      <div class="theme-dots" id="themeDots"></div>
+
+      <label class="field-label">Caption</label>
+      <input type="text" id="entryCaption" class="text-input" placeholder="Sum up today in one line...">
+
+      <label class="field-label">Notes</label>
+      <textarea id="entryNote" class="text-area" placeholder="Write a little more, if you'd like..."></textarea>
+
+      <label class="field-label">Mood</label>
+      <div class="mood-grid" id="moodGrid"></div>
+
+      <div class="sheet-actions"><button class="btn-primary" id="saveEntryBtn">Save entry</button></div>
+    </div>
+  </div>
+
+  <div class="viewer-overlay" id="viewerOverlay">
+    <button class="viewer-close" id="viewerClose"></button>
+    <div class="viewer-content" id="viewerContent"></div>
+  </div>
+</div>
+
+<script>
+const ICONS = {
+  leaf:'<path d="M5 21c0-9 6-15 15-15-1 9-6 15-15 15z"/><path d="M5 21c2-4 5-7 9-9"/>',
+  heart:'<path d="M12 20.2s-7.2-4.4-9.6-8.9C.8 7.8 2.6 4.6 6 4.6c2 0 3.6 1.1 6 3.6 2.4-2.5 4-3.6 6-3.6 3.4 0 5.2 3.2 3.6 6.7-2.4 4.5-9.6 8.9-9.6 8.9z"/>',
+  sun:'<circle cx="12" cy="12" r="4.2"/><path d="M12 3v2.5M12 18.5V21M4.2 12H6.7M17.3 12h2.5M6 6l1.7 1.7M16.3 16.3 18 18M18 6l-1.7 1.7M7.7 16.3 6 18"/>',
+  cloud:'<path d="M7 18a4.5 4.5 0 0 1-.5-9 5.5 5.5 0 0 1 10.7-1.6A4 4 0 0 1 17 18H7z"/><path d="M9 21l-1 2M13 21l-1 2"/>',
+  flame:'<path d="M12 22c4 0 6.5-2.8 6.5-6.3 0-2.6-1.6-4-2.6-5.6.2 2-.8 3-1.6 3.4.6-2.6-.4-5.7-3-7.5.6 2.4-.4 4-2 5.6C7.7 13 6.5 14.7 6.5 16.7 6.5 19.6 8 22 12 22z"/>',
+  sparkle:'<path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
+  camera:'<rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.4"/><path d="M9 7l1.2-2h3.6L15 7"/>',
+  calendar:'<rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  bars:'<rect x="4" y="13" width="4" height="7" rx="1.2"/><rect x="10" y="9" width="4" height="11" rx="1.2"/><rect x="16" y="5" width="4" height="15" rx="1.2"/>',
+  stack:'<rect x="6" y="4" width="13" height="13" rx="3"/><rect x="3" y="8" width="13" height="13" rx="3" fill="none"/>',
+  refresh:'<path d="M3.5 12a8.5 8.5 0 0 1 14.6-6M20.5 12a8.5 8.5 0 0 1-14.6 6"/><path d="M18 3.5v4h-4M6 20.5v-4h4"/>',
+  chevronLeft:'<polyline points="15 5 8 12 15 19"/>', chevronRight:'<polyline points="9 5 16 12 9 19"/>',
+  person:'<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c0-3.6 3.1-6.5 7-6.5s7 2.9 7 6.5"/>',
+  image:'<rect x="3.5" y="5" width="13" height="11" rx="2.5"/><rect x="7.5" y="8" width="13" height="11" rx="2.5"/>',
+  close:'<path d="M6 6l12 12M18 6L6 18"/>', list:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+  grid:'<rect x="4" y="4" width="6" height="6" rx="1.3"/><rect x="14" y="4" width="6" height="6" rx="1.3"/><rect x="4" y="14" width="6" height="6" rx="1.3"/><rect x="14" y="14" width="6" height="6" rx="1.3"/>'
+};
+function icon(n,c='icon'){ return `<svg class="${c}" viewBox="0 0 24 24">${ICONS[n]}</svg>`; }
+function coloredIcon(n,col,c='icon'){ return `<svg class="${c}" viewBox="0 0 24 24" style="stroke:${col};">${ICONS[n]}</svg>`; }
+function showToast(msg,d=1800){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(showToast._t); showToast._t=setTimeout(()=>t.classList.remove('show'),d); }
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+function dateKey(d=new Date()){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+function compressImage(file, maxDim=1280, quality=0.82){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error('Could not read file'));
+    reader.onload=(e)=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error('Could not decode image'));
+      img.onload=()=>{
+        let {width,height}=img;
+        if(width>maxDim||height>maxDim){ if(width>height){height=Math.round(height*maxDim/width);width=maxDim;} else {width=Math.round(width*maxDim/height);height=maxDim;} }
+        const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=height;
+        canvas.getContext('2d').drawImage(img,0,0,width,height);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+const MOODS = {
+  happy:{icon:'sun',label:'Happy',color:'#d9a52e'}, excited:{icon:'sparkle',label:'Excited',color:'#e8935a'},
+  calm:{icon:'leaf',label:'Calm',color:'#4a90c2'}, sad:{icon:'cloud',label:'Sad',color:'#3b5d8a'},
+  stressed:{icon:'flame',label:'Stressed',color:'#c75450'}, grateful:{icon:'heart',label:'Grateful',color:'#c97a8c'}
+};
+const MOOD_INSIGHTS = {
+  happy:{title:'Good days, noted', text:"Happiness showed up often this period — whatever you did, your photos remember it."},
+  excited:{title:'Riding the spark', text:"That excitement is worth bottling. Periods like this don't come around often."},
+  calm:{title:'Steady and slow', text:"A calm stretch is its own quiet win. Well done letting things be unhurried."},
+  sad:{title:'Holding space', text:"You've been carrying some weight lately. These feelings are real and valid. Be gentle with yourself — this too is part of the journey."},
+  stressed:{title:'A lot on your plate', text:"You carried a lot recently. Even small breaks count as real wins right now."},
+  grateful:{title:'Counting the good', text:"Gratitude showed up a lot — that's worth holding onto."}
+};
+
+/* Per-entry themes — replaces the old global frame switcher */
+const THEMES = [
+  { key:'vintage', label:'Vintage' }, { key:'minimal', label:'Minimal' }, { key:'filmstrip', label:'Film strip' },
+  { key:'scrapbook', label:'Scrapbook' }, { key:'happy', label:'Happy' }, { key:'sad', label:'Sad' }, { key:'neutral', label:'Neutral' }
+];
+function themeOf(entry){ return (entry && entry.theme) || 'vintage'; }
+
+function calcStreaks(entries){
+  const dateSet=new Set(entries.map(e=>e.date));
+  let current=0; const cursor=new Date();
+  if(!dateSet.has(dateKey(cursor))) cursor.setDate(cursor.getDate()-1);
+  while(dateSet.has(dateKey(cursor))){ current++; cursor.setDate(cursor.getDate()-1); }
+  const sorted=Array.from(dateSet).sort(); let longest=0,run=0,prev=null;
+  sorted.forEach(dStr=>{
+    if(prev){ const diff=Math.round((new Date(dStr+'T00:00:00')-new Date(prev+'T00:00:00'))/86400000); run = diff===1 ? run+1 : 1; } else run=1;
+    longest=Math.max(longest,run); prev=dStr;
+  });
+  return {current,longest};
+}
+let currentStreakCache=0;
+async function updateStreakCache(){ let e=[]; try{ e=await Storage.getAllEntries(); }catch(err){} currentStreakCache=calcStreaks(e).current; }
+
+function renderTopbar(view){
+  const title=document.getElementById('pageTitle'), sub=document.getElementById('pageSub'), d=new Date();
+  if(view==='today'){ title.textContent='Today'; sub.textContent=d.toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'}); }
+  else if(view==='timeline'){ title.textContent='Timeline'; sub.textContent='Your story so far'; }
+  else { title.textContent='Recap'; sub.textContent='Your week, gathered up'; }
+  const streak=document.getElementById('streakBadge');
+  streak.style.display = view==='today' ? 'flex' : 'none';
+  streak.innerHTML = `${icon('stack','icon-sm')}<span>${currentStreakCache} ${currentStreakCache===1?'day':'days'}</span>`;
+}
+
+async function renderToday(){
+  const el=document.getElementById('todayContent');
+  let entry=null; try{ entry=await Storage.getEntryByDate(dateKey()); }catch(e){}
+  if(entry){
+    const mood=MOODS[entry.mood]||MOODS.calm;
+    let photoInner=icon('image');
+    try{ const photos=await Storage.getPhotosByEntry(entry.id); if(photos.length) photoInner=`<img class="photo-img" src="${photos[0].dataUrl}" alt="">`; }catch(e){}
+    el.innerHTML = `
+      <div class="polaroid-big glass theme-${themeOf(entry)}">
+        <div class="photo" style="background:linear-gradient(135deg, ${mood.color}33, transparent);">${photoInner}</div>
+        <div class="info">
+          <div class="caption-line">${escapeHtml(entry.caption)}</div>
+          <div class="moodrow" style="color:${mood.color};"><span class="mood-dot" style="background:${mood.color}22;">${coloredIcon(mood.icon,mood.color,'icon-sm')}</span><span>${mood.label}</span></div>
+        </div>
+      </div>
+      <button class="change-photo-btn" id="editEntryBtn">${icon('refresh','icon-sm')} Edit entry</button>`;
+    document.getElementById('editEntryBtn').addEventListener('click', () => openEntrySheet(entry));
+  } else {
+    el.innerHTML = `<div class="card glass empty-state">${icon('image')}<p>No entry yet today. Capture a moment and a few words before the day slips away.</p><button class="add-entry-btn" id="addEntryBtn">+ Add today's entry</button></div>`;
+    document.getElementById('addEntryBtn').addEventListener('click', () => openEntrySheet(null));
+  }
+}
+
+async function renderReelView(){
+  const reel=document.getElementById('reel');
+  let entries=[]; try{ entries=await Storage.getAllEntries(); }catch(e){}
+  entries.sort((a,b)=>b.date.localeCompare(a.date));
+  if(!entries.length){ reel.innerHTML=`<div class="reel-item"><div class="card glass empty-state" style="margin:0 5px;">${icon('image')}<p>No entries yet. Add today's entry and your timeline will start filling in.</p></div></div>`; return; }
+  const photosByEntry = await Promise.all(entries.map(e=>Storage.getPhotosByEntry(e.id).catch(()=>[])));
+  reel.innerHTML = entries.map((entry,i)=>{
+    const mood=MOODS[entry.mood]||MOODS.calm; const tilt=i%2===0?-2:2; const photos=photosByEntry[i]||[];
+    const photoInner = photos.length ? `<img class="photo-img" src="${photos[0].dataUrl}" alt="">` : icon('image');
+    return `<div class="reel-item"><div class="polaroid glass theme-${themeOf(entry)}" data-id="${entry.id}" style="--tilt:${tilt}deg">
+      <div class="photo" style="background:linear-gradient(135deg, ${mood.color}33, transparent);">${photoInner}</div>
+      <p class="cap">${escapeHtml(entry.caption)}</p>
+      <div class="mood-row" style="color:${mood.color};">${coloredIcon(mood.icon,mood.color,'icon-sm')} ${mood.label}</div></div></div>`;
+  }).join('');
+  reel.querySelectorAll('.polaroid').forEach(p=>{
+    p.addEventListener('click', async () => {
+      const entry=await Storage.getEntry(p.dataset.id); if(!entry) return;
+      let photos=[]; try{ photos=await Storage.getPhotosByEntry(entry.id); }catch(e){}
+      openPhotoViewer(entry, photos);
+    });
+  });
+}
+function refreshTimelineActive(){ renderReelView(); }
+
+async function refreshAllViews(){ await updateStreakCache(); await renderToday(); await refreshTimelineActive(); renderTopbar('today'); }
+
+/* ---------- Entry sheet: theme/photo carousel ---------- */
+let editingEntryId=null, selectedMood=null, selectedTheme='vintage';
+let selectedPhotoDataUrl=null, originalPhotoDataUrl=null, existingPhotoId=null, removeExistingPhoto=false;
+
+function renderMoodGrid(){
+  const grid=document.getElementById('moodGrid');
+  grid.innerHTML = Object.entries(MOODS).map(([key,m])=>{
+    const sel=selectedMood===key; const style=sel?`border-color:${m.color}; background:${m.color}22;`:'';
+    const ic = sel ? m.color : 'var(--text-secondary)';
+    return `<button type="button" class="mood-chip" data-mood="${key}" style="${style}"><svg class="icon" viewBox="0 0 24 24" style="stroke:${ic};">${ICONS[m.icon]}</svg><span style="${sel?`color:${m.color};`:''}">${m.label}</span></button>`;
+  }).join('');
+  grid.querySelectorAll('.mood-chip').forEach(chip=>chip.addEventListener('click', ()=>{ selectedMood=chip.dataset.mood; renderMoodGrid(); }));
+}
+
+function renderThemeCarousel(){
+  const car=document.getElementById('themeCarousel');
+  car.innerHTML = THEMES.map(t => `
+    <div class="theme-page theme-${t.key}" data-theme="${t.key}">
+      ${selectedPhotoDataUrl ? `<img src="${selectedPhotoDataUrl}" alt="">` : `<div class="photo-empty">${icon('camera')}<span>Add a photo</span></div>`}
+      <span class="theme-label">${t.label}</span>
+    </div>`).join('');
+  car.querySelectorAll('.theme-page').forEach(p => p.addEventListener('click', () => document.getElementById('photoInput').click()));
+  document.getElementById('photoRemoveBtn').style.display = selectedPhotoDataUrl ? 'flex' : 'none';
+  car.onscroll = () => {
+    const idx = Math.round(car.scrollLeft / Math.max(car.clientWidth,1));
+    const t = THEMES[idx];
+    if(t && t.key !== selectedTheme){ selectedTheme = t.key; renderThemeDots(); }
+  };
+  renderThemeDots();
+}
+function renderThemeDots(){
+  document.getElementById('themeDots').innerHTML = THEMES.map(t => `<span class="theme-dot ${t.key===selectedTheme?'active':''}"></span>`).join('');
+}
+function scrollCarouselToSelected(){
+  const car=document.getElementById('themeCarousel');
+  const idx=THEMES.findIndex(t=>t.key===selectedTheme);
+  requestAnimationFrame(()=>{ car.scrollLeft = idx * car.clientWidth; });
+}
+document.getElementById('photoRemoveBtn').innerHTML = icon('close','icon-sm');
+document.getElementById('photoRemoveBtn').addEventListener('click', e => {
+  e.stopPropagation(); selectedPhotoDataUrl=null; removeExistingPhoto=true; renderThemeCarousel();
+});
+document.getElementById('photoInput').addEventListener('change', async e => {
+  const file=e.target.files && e.target.files[0]; e.target.value='';
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ showToast('Please choose an image file'); return; }
+  try{ selectedPhotoDataUrl = await compressImage(file); removeExistingPhoto=false; renderThemeCarousel(); }
+  catch(err){ showToast('Could not load that photo — try another'); }
+});
+
+async function openEntrySheet(entry=null){
+  editingEntryId = entry ? entry.id : null;
+  document.getElementById('sheetTitle').textContent = entry ? 'Edit entry' : 'New entry';
+  document.getElementById('entryCaption').value = entry ? entry.caption : '';
+  document.getElementById('entryNote').value = entry ? (entry.note||'') : '';
+  selectedMood = entry ? entry.mood : null;
+  selectedTheme = themeOf(entry);
+  renderMoodGrid();
+
+  selectedPhotoDataUrl=null; existingPhotoId=null; originalPhotoDataUrl=null; removeExistingPhoto=false;
+  renderThemeCarousel();
+  document.getElementById('sheetOverlay').classList.add('open');
+  scrollCarouselToSelected();
+
+  if(entry){
+    try{
+      const photos = await Storage.getPhotosByEntry(entry.id);
+      if(photos.length){ selectedPhotoDataUrl=photos[0].dataUrl; existingPhotoId=photos[0].id; originalPhotoDataUrl=selectedPhotoDataUrl; renderThemeCarousel(); scrollCarouselToSelected(); }
+    }catch(e){}
+  }
+}
+function closeEntrySheet(){ document.getElementById('sheetOverlay').classList.remove('open'); }
+document.getElementById('sheetClose').innerHTML = icon('close','icon-sm');
+document.getElementById('sheetClose').addEventListener('click', closeEntrySheet);
+document.getElementById('sheetOverlay').addEventListener('click', e => { if(e.target.id==='sheetOverlay') closeEntrySheet(); });
+
+document.getElementById('saveEntryBtn').addEventListener('click', async () => {
+  const date=dateKey(); const caption=document.getElementById('entryCaption').value.trim(); const note=document.getElementById('entryNote').value.trim();
+  if(!caption){ showToast('Add a short caption first ✏️'); return; }
+  if(!selectedMood){ showToast('Pick a mood for today 🤍'); return; }
+  try{
+    let entryId;
+    if(editingEntryId){ await Storage.updateEntry(editingEntryId, { caption, note, mood:selectedMood, theme:selectedTheme }); entryId=editingEntryId; }
+    else { const created = await Storage.createEntry({ date, caption, note, mood:selectedMood, theme:selectedTheme }); entryId=created.id; }
+    if(removeExistingPhoto && existingPhotoId){ await Storage.deletePhoto(existingPhotoId); }
+    else if(selectedPhotoDataUrl && selectedPhotoDataUrl!==originalPhotoDataUrl){
+      if(existingPhotoId) await Storage.deletePhoto(existingPhotoId);
+      await Storage.addPhoto({ entryId, dataUrl:selectedPhotoDataUrl, order:0 });
+    }
+    showToast(editingEntryId ? 'Entry updated ✓' : 'Entry saved ✓');
+    closeEntrySheet();
+    await refreshAllViews();
+    if(document.querySelector('.nav-btn[data-target="recap"]').classList.contains('active')) renderRecap(recapRange);
+  }catch(err){ showToast('Could not save — try again'); }
+});
+
+function openPhotoViewer(entry, photos){
+  const content=document.getElementById('viewerContent'); const mood=MOODS[entry.mood]||MOODS.calm; const t=themeOf(entry);
+  if(!photos.length){
+    content.innerHTML = `<div class="viewer-empty theme-${t}">${icon('image')}<p class="viewer-cap">${escapeHtml(entry.caption)}</p><div class="viewer-mood" style="color:${mood.color};">${coloredIcon(mood.icon,mood.color)} ${mood.label}</div></div>`;
+  } else {
+    content.innerHTML = `<div class="viewer-scroll theme-${t}">${photos.map(p=>`<div class="viewer-slide"><img src="${p.dataUrl}" alt=""></div>`).join('')}</div>
+      <p class="viewer-cap">${escapeHtml(entry.caption)}</p><div class="viewer-mood" style="color:${mood.color};">${coloredIcon(mood.icon,mood.color)} ${mood.label}</div>`;
+  }
+  document.getElementById('viewerOverlay').classList.add('open');
+}
+function closePhotoViewer(){ document.getElementById('viewerOverlay').classList.remove('open'); }
+document.getElementById('viewerClose').innerHTML = icon('close','icon-sm');
+document.getElementById('viewerClose').addEventListener('click', closePhotoViewer);
+document.getElementById('viewerOverlay').addEventListener('click', e => { if(e.target.id==='viewerOverlay'||e.target.id==='viewerContent') closePhotoViewer(); });
+
+let recapRange='weekly', weekOffset=0, monthOffset=0;
+function getWeekInfo(offset){
+  const base=new Date(); base.setDate(base.getDate()+offset*7); const dow=base.getDay();
+  const start=new Date(base); start.setDate(base.getDate()-dow);
+  const names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat']; const days=[];
+  for(let i=0;i<7;i++){ const day=new Date(start); day.setDate(start.getDate()+i); days.push({key:dateKey(day), num:day.getDate(), name:names[i]}); }
+  const end=new Date(start); end.setDate(start.getDate()+6);
+  const fmt=dt=>dt.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  return { days, label:`${fmt(start)} - ${fmt(end)}` };
+}
+function getMonthInfo(offset){
+  const base=new Date(); base.setDate(1); base.setMonth(base.getMonth()+offset);
+  return { year:base.getFullYear(), month:base.getMonth(), label: base.toLocaleDateString(undefined,{month:'long',year:'numeric'}) };
+}
+function getPeriodBounds(range, offset){
+  if(range==='monthly'){ const {year,month}=getMonthInfo(offset); const start=`${year}-${String(month+1).padStart(2,'0')}-01`; const dim=new Date(year,month+1,0).getDate(); const end=`${year}-${String(month+1).padStart(2,'0')}-${String(dim).padStart(2,'0')}`; return {start,end}; }
+  const {days}=getWeekInfo(offset); return {start:days[0].key, end:days[6].key};
+}
+function buildCalendarGrid(range, entries){
+  const grid=document.getElementById('recapGrid'); const countLabel=document.getElementById('calendarCount');
+  const rangeLabel=document.getElementById('rangeLabel'); const nextBtn=document.getElementById('nextRange');
+  const byDate={}; entries.forEach(e=>byDate[e.date]=e); const todayK=dateKey();
+  grid.style.gridTemplateColumns='repeat(7,1fr)';
+  if(range==='monthly'){
+    const {year,month,label}=getMonthInfo(monthOffset); rangeLabel.textContent=label; nextBtn.disabled=monthOffset>=0;
+    const startWd=new Date(year,month,1).getDay(); const dim=new Date(year,month+1,0).getDate();
+    let html=''; for(let i=0;i<startWd;i++) html+=`<div class="recap-cell empty" style="visibility:hidden;"></div>`;
+    let count=0;
+    for(let d=1;d<=dim;d++){
+      const dKey=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; const isToday=dKey===todayK; const entry=byDate[dKey];
+      if(entry){ count++; const mood=MOODS[entry.mood]||MOODS.calm; html+=`<div class="recap-cell ${isToday?'today':''}" data-date="${dKey}" style="background:${mood.color}55; cursor:pointer;">${d}</div>`; }
+      else html+=`<div class="recap-cell empty ${isToday?'today':''}">${d}</div>`;
+    }
+    grid.innerHTML=html; countLabel.textContent=`${count} ${count===1?'entry':'entries'} this month`;
+  } else {
+    const {days,label}=getWeekInfo(weekOffset); rangeLabel.textContent=label; nextBtn.disabled=weekOffset>=0;
+    let count=0;
+    grid.innerHTML = days.map(day=>{
+      const isToday=day.key===todayK; const entry=byDate[day.key]; let cell;
+      if(entry){ count++; const mood=MOODS[entry.mood]||MOODS.calm; cell=`<div class="recap-cell ${isToday?'today':''}" data-date="${day.key}" style="background:${mood.color}55; cursor:pointer;">${day.num}</div>`; }
+      else cell=`<div class="recap-cell empty ${isToday?'today':''}">${day.num}</div>`;
+      return `<div class="recap-col"><span class="dayname">${day.name}</span>${cell}</div>`;
+    }).join('');
+    countLabel.textContent=`${count} ${count===1?'entry':'entries'} this week`;
+  }
+  grid.querySelectorAll('.recap-cell[data-date]').forEach(cell=>{
+    cell.addEventListener('click', async () => {
+      const entry=byDate[cell.dataset.date]; if(!entry) return;
+      let photos=[]; try{ photos=await Storage.getPhotosByEntry(entry.id); }catch(e){}
+      openPhotoViewer(entry, photos);
+    });
+  });
+}
+async function buildStatsCard(entries){
+  let totalPhotos=0; try{ totalPhotos=(await Storage.getAllPhotos()).length; }catch(e){}
+  const {current,longest}=calcStreaks(entries);
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-tile"><div class="stat-num">${entries.length}</div><div class="stat-label">Total entries</div></div>
+    <div class="stat-tile"><div class="stat-num">${totalPhotos}</div><div class="stat-label">Photos saved</div></div>
+    <div class="stat-tile"><div class="stat-num">${current}</div><div class="stat-label">Current streak</div></div>
+    <div class="stat-tile"><div class="stat-num">${longest}</div><div class="stat-label">Longest streak</div></div>`;
+}
+async function buildCollage(range, entries){
+  const wrap=document.getElementById('collageWrap'); const meta=document.getElementById('collageMeta');
+  meta.textContent = range==='weekly' ? "Made for you each week" : "Made for you each month";
+  const offset = range==='weekly' ? weekOffset : monthOffset; const {start,end}=getPeriodBounds(range,offset);
+  const periodEntries = entries.filter(e=>e.date>=start && e.date<=end);
+  const withPhotos=[];
+  for(const e of periodEntries){ let photos=[]; try{ photos=await Storage.getPhotosByEntry(e.id); }catch(err){} if(photos.length) withPhotos.push({entry:e, photo:photos[0]}); }
+  if(withPhotos.length<3){ wrap.innerHTML = `<div class="collage-empty">${icon('image')}<p class="t">This space is waiting</p><p class="d">A collage appears after a few more photos</p></div>`; return; }
+  withPhotos.sort((a,b)=>b.entry.date.localeCompare(a.entry.date));
+  const top=withPhotos.slice(0,5);
+  wrap.innerHTML = `<div class="collage-grid">${top.map((it,i)=>`<div class="${i===0?'collage-cell c1':'collage-cell'}" data-id="${it.entry.id}"><img class="photo-img" src="${it.photo.dataUrl}" alt=""></div>`).join('')}</div>`;
+  wrap.querySelectorAll('.collage-cell[data-id]').forEach(cell=>{
+    cell.addEventListener('click', async () => {
+      const entry=await Storage.getEntry(cell.dataset.id); if(!entry) return;
+      let photos=[]; try{ photos=await Storage.getPhotosByEntry(entry.id); }catch(e){}
+      openPhotoViewer(entry, photos);
+    });
+  });
+}
+function buildMoodInsight(range, entries){
+  const card=document.getElementById('moodInsightCard'); const offset = range==='weekly'?weekOffset:monthOffset;
+  const {start,end}=getPeriodBounds(range,offset); const relevant=entries.filter(e=>e.date>=start && e.date<=end && e.mood);
+  if(!relevant.length){ card.innerHTML=`<div class="ic" style="background:var(--accent-soft);">${coloredIcon('leaf','var(--accent)')}</div><h4>Nothing here yet</h4><p>Add a few entries and we'll start noticing patterns in how you've been feeling.</p>`; return; }
+  const counts={}; relevant.forEach(e=>counts[e.mood]=(counts[e.mood]||0)+1);
+  const dominant=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0]; const mood=MOODS[dominant]||MOODS.calm; const insight=MOOD_INSIGHTS[dominant]||MOOD_INSIGHTS.calm;
+  card.innerHTML = `<div class="ic" style="background:${mood.color}22;">${coloredIcon(mood.icon,mood.color)}</div><h4>${insight.title}</h4><p>${insight.text}</p>`;
+}
+async function renderRecap(range){
+  let entries=[]; try{ entries=await Storage.getAllEntries(); }catch(e){}
+  buildCalendarGrid(range, entries); buildStatsCard(entries); await buildCollage(range, entries); buildMoodInsight(range, entries);
+}
+
+document.querySelectorAll('.seg-toggle:not(.timeline-toggle) .seg-btn').forEach(btn=>{
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.seg-toggle:not(.timeline-toggle) .seg-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); recapRange=btn.dataset.range; weekOffset=0; monthOffset=0; renderRecap(recapRange);
+  });
+});
+document.getElementById('prevRange').innerHTML = icon('chevronLeft','icon-sm');
+document.getElementById('nextRange').innerHTML = icon('chevronRight','icon-sm');
+document.getElementById('prevRange').addEventListener('click', () => { if(recapRange==='weekly') weekOffset--; else monthOffset--; renderRecap(recapRange); });
+document.getElementById('nextRange').addEventListener('click', () => {
+  if(recapRange==='weekly'){ if(weekOffset>=0){ showToast("You're already at the current week"); return; } weekOffset++; }
+  else { if(monthOffset>=0){ showToast("You're already at the current month"); return; } monthOffset++; }
+  renderRecap(recapRange);
+});
+
+const navIcons={today:'camera',timeline:'calendar',recap:'bars'};
+document.querySelectorAll('.nav-btn').forEach(btn=>{ btn.innerHTML=icon(navIcons[btn.dataset.target]); btn.setAttribute('aria-label',btn.dataset.target); });
+const navButtons=document.querySelectorAll('.nav-btn'); const views=document.querySelectorAll('.view');
+function goToView(name){
+  views.forEach(v=>v.classList.toggle('active', v.dataset.view===name));
+  navButtons.forEach(b=>b.classList.toggle('active', b.dataset.target===name));
+  renderTopbar(name);
+  if(name==='today') renderToday();
+  if(name==='timeline') refreshTimelineActive();
+  if(name==='recap') renderRecap(recapRange);
+}
+navButtons.forEach(btn=>btn.addEventListener('click', ()=>goToView(btn.dataset.target)));
+
+const Storage = (() => {
+  const DB_NAME='MyDearTodayDB', DB_VERSION=2, SETTINGS_STORE='settings', ENTRIES_STORE='journalEntries', PHOTOS_STORE='photos', STATS_STORE='stats';
+  let dbPromise=null;
+  function genId(p){ return `${p}_${Date.now()}_${Math.random().toString(36).slice(2,9)}`; }
+  function openDB(){
+    if(dbPromise) return dbPromise;
+    dbPromise=new Promise((resolve,reject)=>{
+      if(!('indexedDB' in window)){ reject(new Error('IndexedDB not supported.')); return; }
+      const request=indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded=(event)=>{
+        const db=event.target.result;
+        if(!db.objectStoreNames.contains(SETTINGS_STORE)) db.createObjectStore(SETTINGS_STORE,{keyPath:'key'});
+        if(!db.objectStoreNames.contains(ENTRIES_STORE)){ const en=db.createObjectStore(ENTRIES_STORE,{keyPath:'id'}); en.createIndex('date','date',{unique:false}); en.createIndex('mood','mood',{unique:false}); en.createIndex('favorite','favorite',{unique:false}); }
+        if(!db.objectStoreNames.contains(PHOTOS_STORE)){ const ph=db.createObjectStore(PHOTOS_STORE,{keyPath:'id'}); ph.createIndex('entryId','entryId',{unique:false}); ph.createIndex('order','order',{unique:false}); }
+        if(!db.objectStoreNames.contains(STATS_STORE)) db.createObjectStore(STATS_STORE,{keyPath:'key'});
+      };
+      request.onsuccess=(e)=>resolve(e.target.result);
+      request.onerror=(e)=>reject(e.target.error);
+      request.onblocked=()=>reject(new Error('Upgrade blocked — close other tabs using this app.'));
+    });
+    return dbPromise;
+  }
+  async function putRecord(s,r){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(s,'readwrite'); tx.objectStore(s).put(r); tx.oncomplete=()=>res(r); tx.onerror=()=>rej(tx.error); }); }
+  async function getRecord(s,k){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(s,'readonly'); const req=tx.objectStore(s).get(k); req.onsuccess=()=>res(req.result||null); req.onerror=()=>rej(req.error); }); }
+  async function getAllRecords(s){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(s,'readonly'); const req=tx.objectStore(s).getAll(); req.onsuccess=()=>res(req.result||[]); req.onerror=()=>rej(req.error); }); }
+  async function deleteRecord(s,k){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(s,'readwrite'); tx.objectStore(s).delete(k); tx.oncomplete=()=>res(true); tx.onerror=()=>rej(tx.error); }); }
+  function setSetting(k,v){ return putRecord(SETTINGS_STORE,{key:k,value:v,updatedAt:Date.now()}); }
+  function getSetting(k){ return getRecord(SETTINGS_STORE,k); }
+  async function createEntry({date, caption='', note='', mood=null, favorite=false, theme='vintage'}){
+    const now=Date.now(); const entry={id:genId('entry'), date, caption, note, mood, favorite, theme, createdAt:now, updatedAt:now};
+    return putRecord(ENTRIES_STORE, entry);
+  }
+  function getEntry(id){ return getRecord(ENTRIES_STORE,id); }
+  function getAllEntries(){ return getAllRecords(ENTRIES_STORE); }
+  async function getEntryByDate(date){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(ENTRIES_STORE,'readonly'); const req=tx.objectStore(ENTRIES_STORE).index('date').get(date); req.onsuccess=()=>res(req.result||null); req.onerror=()=>rej(req.error); }); }
+  async function updateEntry(id, changes){ const existing=await getEntry(id); if(!existing) throw new Error('not found'); return putRecord(ENTRIES_STORE, {...existing, ...changes, updatedAt:Date.now()}); }
+  async function deleteEntry(id){ await deletePhotosByEntry(id); return deleteRecord(ENTRIES_STORE,id); }
+  async function addPhoto({entryId, dataUrl, order=0}){ return putRecord(PHOTOS_STORE, {id:genId('photo'), entryId, dataUrl, order, createdAt:Date.now()}); }
+  async function getPhotosByEntry(entryId){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(PHOTOS_STORE,'readonly'); const req=tx.objectStore(PHOTOS_STORE).index('entryId').getAll(entryId); req.onsuccess=()=>res((req.result||[]).sort((a,b)=>a.order-b.order)); req.onerror=()=>rej(req.error); }); }
+  function getAllPhotos(){ return getAllRecords(PHOTOS_STORE); }
+  function deletePhoto(id){ return deleteRecord(PHOTOS_STORE,id); }
+  async function deletePhotosByEntry(entryId){ const photos=await getPhotosByEntry(entryId); await Promise.all(photos.map(p=>deletePhoto(p.id))); return true; }
+  return { openDB, setSetting, getSetting, createEntry, getEntry, getAllEntries, getEntryByDate, updateEntry, deleteEntry, addPhoto, getPhotosByEntry, getAllPhotos, deletePhoto, deletePhotosByEntry };
+})();
+window.MDT = Storage;
+
+async function boot(){
+  try{ await Storage.openDB(); }catch(err){}
+  await updateStreakCache();
+  renderTopbar('today');
+  await renderToday();
+  await refreshTimelineActive();
+  renderRecap(recapRange);
+}
+boot();
+</script>
+</body>
+</html>
